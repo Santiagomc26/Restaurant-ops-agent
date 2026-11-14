@@ -2,7 +2,7 @@
 name = "restaurant-ops-agent"
 version = "0.1.0"
 description = "Agente de operaciones para restaurantes: pedidos por WhatsApp con tool calling, inventario por API y pronóstico de demanda."
-requires-python = ">=3.11,<3.13"
+requires-python = ">=3.12,<3.13"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -10,7 +10,7 @@ pythonpath = ["."]
 
 [tool.ruff]
 line-length = 110
-target-version = "py311"
+target-version = "py312"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "SIM"]

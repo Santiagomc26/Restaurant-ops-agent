@@ -10,4 +10,5 @@ def configure_logging(level: str) -> None:
         force=True,
     )
     # httpx logs every request at INFO, which drowns the agent's own traces.
-    logging.getLogger("httpx").setLevel(logging.WARNING)
+    for noisy in ("httpx", "httpx2"):
+        logging.getLogger(noisy).setLevel(logging.WARNING)

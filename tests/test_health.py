@@ -4,8 +4,14 @@ from fastapi.testclient import TestClient
 
 from app.api.dependencies import get_health_service
 from app.core.config import Settings
+from app.core.database import build_engine
 from app.main import create_app
-from app.services.health_service import DependencyStatus, HealthService, OllamaHealthCheck
+from app.services.health_service import (
+    DatabaseHealthCheck,
+    DependencyStatus,
+    HealthService,
+    OllamaHealthCheck,
+)
 
 
 class FakeCheck:
@@ -67,6 +73,20 @@ async def test_ollama_check_reports_unreachable_server() -> None:
     assert "unreachable" in status.detail
 
 
-@pytest.fixture
-def anyio_backend() -> str:
-    return "asyncio"
+@pytest.mark.anyio
+async def test_database_check_reports_healthy_connection(engine) -> None:
+    status = await DatabaseHealthCheck(engine).check()
+
+    assert status.healthy is True
+    assert "sqlite" in status.detail
+
+
+@pytest.mark.anyio
+async def test_database_check_reports_unreachable_database(tmp_path) -> None:
+    # A file inside a missing folder fails instantly on every OS, unlike a TCP
+    # connection to a closed port, which Windows retries for several seconds.
+    broken = build_engine(f"sqlite:///{tmp_path / 'missing' / 'app.db'}")
+    status = await DatabaseHealthCheck(broken).check()
+
+    assert status.healthy is False
+    assert "unreachable" in status.detail

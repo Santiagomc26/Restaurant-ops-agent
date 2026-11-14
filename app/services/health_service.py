@@ -2,6 +2,9 @@ from dataclasses import dataclass
 from typing import Protocol
 
 import httpx
+from sqlalchemy import Engine, text
+from sqlalchemy.exc import SQLAlchemyError
+from starlette.concurrency import run_in_threadpool
 
 from app.core.config import Settings
 
@@ -40,6 +43,23 @@ class OllamaHealthCheck:
         if model in installed or f"{model}:latest" in installed:
             return DependencyStatus("ollama", True, f"model '{model}' available")
         return DependencyStatus("ollama", False, f"model '{model}' not pulled (run: ollama pull {model})")
+
+
+class DatabaseHealthCheck:
+    def __init__(self, engine: Engine) -> None:
+        self._engine = engine
+
+    async def check(self) -> DependencyStatus:
+        try:
+            # Sync driver call off the event loop so a slow database can't block other requests.
+            await run_in_threadpool(self._ping)
+        except SQLAlchemyError as exc:
+            return DependencyStatus("database", False, f"unreachable: {exc.__class__.__name__}")
+        return DependencyStatus("database", True, f"{self._engine.dialect.name} connection ok")
+
+    def _ping(self) -> None:
+        with self._engine.connect() as connection:
+            connection.execute(text("SELECT 1"))
 
 
 class HealthService:

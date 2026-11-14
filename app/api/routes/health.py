@@ -15,7 +15,11 @@ async def liveness(settings: SettingsDep) -> LivenessResponse:
     )
 
 
-@router.get("/ready", response_model=ReadinessResponse)
+@router.get(
+    "/ready",
+    response_model=ReadinessResponse,
+    responses={503: {"model": ReadinessResponse, "description": "One or more dependencies are unavailable"}},
+)
 async def readiness(health_service: HealthServiceDep, response: Response) -> ReadinessResponse:
     results = await health_service.run()
     all_healthy = all(result.healthy for result in results)
